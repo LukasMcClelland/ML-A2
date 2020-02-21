@@ -10,6 +10,7 @@ from random import shuffle
 
 maxFeatures = 5000
 
+# CURRENTLY NOT USED - this function was from previous stuff I was testing. Might come in handy later
 # Split data up, return a dictionary where keys are class names and values are lists of entries
 def separateClasses(data):
     tempDict = dict()
