@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from nltk.stem import PorterStemmer
 import tqdm
 
-maxFeatures = 50000
+maxFeatures = 5000
 
 
 # CURRENTLY NOT USED - this function was from previous stuff I was testing. Might come in handy later
@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
     # Shuffle the rows for better accuracy and
     # only work on a quarter of the reviews while we're building/debugging (for speed)
-    sampledTrainingData = trainingData.sample(frac=0.25)
+    sampledTrainingData = trainingData.sample(frac=0.1)
 
     # Train and get the required values for our thetas
     numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(sampledTrainingData)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     for x in range(10):
         # TODO modify the following line to test actual test data
         # noinspection PyRedeclaration
-        sampledTestData = trainingData.sample(frac=0.25)
+        sampledTestData = trainingData.sample(frac=0.1)
 
         # Test and get predictions
         test(sampledTestData, theta0, theta1, theta_j_0, theta_j_1)
