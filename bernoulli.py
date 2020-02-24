@@ -1,18 +1,15 @@
-# TODO
-#  maybe use TF-IDF features with sklearn (TfidfVectorizer or TfidfTransformer)
-#  https://towardsdatascience.com/hacking-scikit-learns-vectorizers-9ef26a7170af   might have ways of improving results
 
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 import sys
 from sklearn.model_selection import KFold
+import nltk
+nltk.download('stopwords')
 
 maxFeatures = 5000
-inColab = False  # No need to change this, it's checked automatically :)
+inColab = False  # No need to change this, it's checked automatically
 
-
-# CURRENTLY NOT USED - this function was from previous stuff I was testing. Might come in handy later
 # Split data up, return a dictionary where keys are class names and values are lists of entries
 def separateClasses(data, labelVector):
     copyVector = labelVector.to_numpy()
@@ -29,16 +26,19 @@ def separateClasses(data, labelVector):
     tempDict['negative'] = np.array(tempDict['negative'], dtype=np.uint32)
     return tempDict
 
-def train(trainingData):
+def train(trainingData, stopWords):
 
-    # 0 - 83.76%
-    # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', max_features=maxFeatures, binary=False)
+    # 0 - 84.38% (50000 words, 5 splits)
+    # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', max_features=maxFeatures, binary=True)
 
-    # 1 - 84.70
-    vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='[a-zA-Z]+', stop_words=stopWords, max_features=maxFeatures, binary=False)
+    # 1 - 84.25% (50000 words, 5 splits)
+    # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+', max_features=maxFeatures, binary=True)
 
-    # 2 - 85.00
-    # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+|\\b\\w\\/\\w+\\b', stop_words=stopWords, max_features=maxFeatures, binary=False)
+    # 2 - 85.06% (50000 words, 5 splits)
+    # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+', stop_words=stopWords, max_features=maxFeatures, binary=True)
+
+    # 3 - 85.27% (50000 words, 5 splits)
+    vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+|\\b\\w\\/\\w+\\b', stop_words=stopWords, max_features=maxFeatures, binary=False)
 
     countMatrix = vectorizer.fit_transform(trainingData['review'])
     countMatrixAsArray = countMatrix.toarray()
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     inColab = 'google.colab' in sys.modules
     if inColab:
         print("Colab environment detected.\n")
-        maxFeatures = 5000
+        maxFeatures = 50000
         trainingData = pd.read_csv("./gdrive/My Drive/train.csv")  # | review (text)  | sentiment (pos/neg) |
         # testData = pd.read_csv("test.csv")       # | id (review id) |   review (text)     |
         stopWords = [line.rstrip('\n') for line in open("./gdrive/My Drive/stopwords.txt")]
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
             print("Training...", end='')
             kfoldTrain = trainingData.iloc[train_index]
-            numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(kfoldTrain)
+            numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(kfoldTrain, stopWords)
             print("DONE")
 
             print("Testing...", end='')
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
             print("Training...", end='')
             kfoldTrain = trainingData.iloc[train_index]
-            numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(kfoldTrain)
+            numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(kfoldTrain, stopWords)
             print("DONE")
 
             print("Testing...", end='')
