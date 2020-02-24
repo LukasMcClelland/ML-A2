@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.stem import PorterStemmer
 import sys
+from sklearn.model_selection import KFold
 
 maxFeatures = 5000
 inColab = False  # No need to change this, it's checked automatically :)
@@ -124,21 +125,22 @@ def test(testData, theta0, theta1, theta_j_0, theta_j_1):
 if __name__ == "__main__":
     inColab = 'google.colab' in sys.modules
     if inColab:
-        print("Colab environment detected. Running program in high RAM usage mode\n")
         maxFeatures = 10000
+        print("Colab environment detected. Running program in high RAM usage mode\n")
         trainingData = pd.read_csv("./gdrive/My Drive/train.csv")  # | review (text)  | sentiment (pos/neg) |
         # testData = pd.read_csv("test.csv")       # | id (review id) |   review (text)     |
         stopWords = [line.rstrip('\n') for line in open("./gdrive/My Drive/stopwords.txt")]
 
+
+
+        kf = KFold(n_splits=10)
+        for train_index, test_index in kf.split(trainingData):
+            print("TRAIN:", train_index, "TEST:", test_index)
+            kfoldTrain = trainingData.ilo
+
         sampledTrainingData = trainingData.sample(frac=0.5)
         numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(sampledTrainingData)
-        for x in range(10):
-            # TODO modify the following line to test actual test data
-            # noinspection PyRedeclaration
-            sampledTestData = trainingData.sample(frac=0.5)
 
-            # Test and get predictions
-            test(sampledTestData, theta0, theta1, theta_j_0, theta_j_1)
     else:
         print("Colab environment not detected. Running program in low RAM usage mode\n")
         trainingData = pd.read_csv("train.csv")  # | review (text)  | sentiment (pos/neg) |
@@ -146,15 +148,10 @@ if __name__ == "__main__":
         stopWords = [line.rstrip('\n') for line in open("stopwords.txt")]
 
         sampledTrainingData = trainingData.sample(frac=0.1)
-
-        # Train and get the required values for our thetas
         numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(sampledTrainingData)
 
-        # TODO modify the following line to test actual test data
-        # noinspection PyRedeclaration
-        sampledTestData = trainingData.sample(frac=0.1)
 
-        # Test and get predictions
-        test(sampledTestData, theta0, theta1, theta_j_0, theta_j_1)
+
+
 
 
