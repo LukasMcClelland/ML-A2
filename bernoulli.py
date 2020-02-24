@@ -5,7 +5,6 @@
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
-from nltk.stem import PorterStemmer
 import sys
 from sklearn.model_selection import KFold
 
@@ -25,51 +24,27 @@ def separateClasses(data, labelVector):
             tempDict['positive'].append(data[x])
         else:
             tempDict['negative'].append(data[x])
-    if inColab:
-        tempDict['positive'] = np.array(tempDict['positive'], dtype=np.uint64)
-        tempDict['negative'] = np.array(tempDict['negative'], dtype=np.uint64)
-    else:
-        tempDict['positive'] = np.array(tempDict['positive'], dtype=np.uint32)
-        tempDict['negative'] = np.array(tempDict['negative'], dtype=np.uint32)
+
+    tempDict['positive'] = np.array(tempDict['positive'], dtype=np.uint32)
+    tempDict['negative'] = np.array(tempDict['negative'], dtype=np.uint32)
     return tempDict
 
-
-stemmer = PorterStemmer()
-
-
-class CountVectorizerWithStemmer(CountVectorizer):
-    def build_analyzer(self):
-        analyzer = super(CountVectorizerWithStemmer, self).build_analyzer()
-        return lambda doc: ([stemmer.stem(w) for w in analyzer(doc)])
-
-
 def train(trainingData):
-    # TODO
-    # stemming maybe, words in first sentence get counted twice (upweighting)?
 
-    # 0 - 84.0%
-    # vectorizer = CountVectorizer(analyzer='word', stop_words=stopWords, max_features=maxFeatures, binary=False)
+    # 0 - 83.76%
+    # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', max_features=maxFeatures, binary=False)
 
-    # 1 - 87.0%
-    # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='[a-zA-Z]+', stop_words=stopWords, max_features=maxFeatures, binary=False)
+    # 1 - 84.70
+    vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='[a-zA-Z]+', stop_words=stopWords, max_features=maxFeatures, binary=False)
 
-    # 2 - 87.4%
-    vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word',
-                                 token_pattern='(?u)[a-zA-Z]+|\\b\\w\\/\\w+\\b', stop_words=stopWords,
-                                 max_features=maxFeatures, binary=True)
-
-    # 3 - 85.3%
-    # vectorizer = CountVectorizerWithStemmer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+|\\b\\w\\/\\w+\\b', stop_words=stopWords, max_features=maxFeatures, binary=False)
-
-    # 4 - 86.1%
-    # vectorizer = CountVectorizerWithStemmer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+', stop_words=stopWords, max_features=maxFeatures, binary=False)
+    # 2 - 85.00
+    # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+|\\b\\w\\/\\w+\\b', stop_words=stopWords, max_features=maxFeatures, binary=False)
 
     countMatrix = vectorizer.fit_transform(trainingData['review'])
     countMatrixAsArray = countMatrix.toarray()
-    print("Show the", maxFeatures, "most popular words in the corpus:\n", vectorizer.get_feature_names())
-    print("\nNumber of reviews (rows) in the word count table:", len(countMatrixAsArray))
-    print("Number of words   (cols) in the word count table:", len(countMatrixAsArray[0]))
-    print("\nThe word count table:\n", countMatrixAsArray, '\n')
+    # print("Show the", maxFeatures, "most popular words in the corpus:\n", vectorizer.get_feature_names())
+    # print("\nNumber of reviews (rows) in the word count table:", len(countMatrixAsArray))
+    # print("Number of words   (cols) in the word count table:", len(countMatrixAsArray[0]))
     numWords = len(countMatrixAsArray[0])
 
     # Create dictionary with separated classes
@@ -79,16 +54,10 @@ def train(trainingData):
     totalReviews = totalNegReviews + totalPosReviews
     theta0 = totalNegReviews / totalReviews
     theta1 = totalPosReviews / totalReviews
-
     negCounts = separated['negative'].sum(axis=0)
     posCounts = separated['positive'].sum(axis=0)
-
-    if inColab:
-        theta_j_0 = np.array([0 for _ in range(numWords)], dtype='float32')
-        theta_j_1 = np.array([0 for _ in range(numWords)], dtype='float32')
-    else:
-        theta_j_0 = np.array([0 for _ in range(numWords)], dtype='float32')
-        theta_j_1 = np.array([0 for _ in range(numWords)], dtype='float32')
+    theta_j_0 = np.array([0 for _ in range(numWords)], dtype='float64')
+    theta_j_1 = np.array([0 for _ in range(numWords)], dtype='float64')
 
     for x in range(numWords):
         theta_j_0[x] = (negCounts[x] + 1) / (totalNegReviews + numWords)
@@ -97,19 +66,17 @@ def train(trainingData):
     return numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1
 
 
-def test(testData, theta0, theta1, theta_j_0, theta_j_1):
-    print("Start testing...", end='')
+def test(vectorizer, testData, theta0, theta1, theta_j_0, theta_j_1):
     transformedData = vectorizer.transform(testData['review'])
     dataToArray = transformedData.toarray()
     labelVector = testData['sentiment'].to_numpy()
 
-    # firstLogTerm = np.log(np.true_divide(theta_j_1, theta_j_0))
-    # secondLogTerm = np.log(np.true_divide(np.subtract(np.ones(len(theta_j_1)), theta_j_1), np.subtract(np.ones(len(theta_j_0)), theta_j_0)))
-    firstTerm = np.dot(dataToArray, np.log(np.true_divide(theta_j_1, theta_j_0)))
-    secondTerm = np.dot(np.subtract(np.ones((len(dataToArray), len(dataToArray[0]))), dataToArray),
-                        np.log(np.true_divide(np.subtract(np.ones(len(theta_j_1)), theta_j_1),
-                                              np.subtract(np.ones(len(theta_j_0)), theta_j_0))))
-    fastLogLikelihoods = np.add(np.add(firstTerm, secondTerm), np.log(theta1 / theta0))
+    # This complicated looking mess is simply a log-likelihood calculation that's been compressed to be memory efficient
+    # It was originally done using multiple variables but this proved to be problematic because of very high memory usage
+    fastLogLikelihoods = np.add(np.add(np.dot(dataToArray, np.log(np.true_divide(theta_j_1, theta_j_0))), np.dot(
+        np.subtract(np.ones((len(dataToArray), len(dataToArray[0]))), dataToArray), np.log(
+            np.true_divide(np.subtract(np.ones(len(theta_j_1)), theta_j_1),
+                           np.subtract(np.ones(len(theta_j_0)), theta_j_0))))), np.log(theta1 / theta0))
 
     correctPredictions = 0
     for i in range(len(testData)):
@@ -117,41 +84,66 @@ def test(testData, theta0, theta1, theta_j_0, theta_j_1):
             correctPredictions += 1
         if fastLogLikelihoods[i] < 0 and labelVector[i] == 'negative':
             correctPredictions += 1
-
-    print("DONE")
-    print("Accuracy = {0:.1f}%".format(100 * correctPredictions / len(labelVector)))
+    return 100 * correctPredictions / len(labelVector)
 
 
 if __name__ == "__main__":
     inColab = 'google.colab' in sys.modules
     if inColab:
-        maxFeatures = 10000
-        print("Colab environment detected. Running program in high RAM usage mode\n")
+        print("Colab environment detected.\n")
+        maxFeatures = 5000
         trainingData = pd.read_csv("./gdrive/My Drive/train.csv")  # | review (text)  | sentiment (pos/neg) |
         # testData = pd.read_csv("test.csv")       # | id (review id) |   review (text)     |
         stopWords = [line.rstrip('\n') for line in open("./gdrive/My Drive/stopwords.txt")]
 
+        trainingData = trainingData.sample(frac=1)
 
-
-        kf = KFold(n_splits=10)
+        kf = KFold(n_splits=5, shuffle=False)
+        foldNum = 0
+        foldAccs = []
         for train_index, test_index in kf.split(trainingData):
-            print("TRAIN:", train_index, "TEST:", test_index)
-            kfoldTrain = trainingData.ilo
+            print("Fold", foldNum + 1)
 
-        sampledTrainingData = trainingData.sample(frac=0.5)
-        numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(sampledTrainingData)
+            print("Training...", end='')
+            kfoldTrain = trainingData.iloc[train_index]
+            numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(kfoldTrain)
+            print("DONE")
+
+            print("Testing...", end='')
+            kfoldTest = trainingData.iloc[test_index]
+            acc = test(vectorizer, kfoldTest, theta0, theta1, theta_j_0, theta_j_1)
+            print("DONE \nAccuracy = {0:.2f}".format(acc), "%\n")
+
+            foldAccs.append(acc)
+            foldNum += 1
+        print("Average accuracy across all folds = {0:.2f}%".format(np.array(foldAccs).sum() / len(foldAccs)))
+
+
 
     else:
-        print("Colab environment not detected. Running program in low RAM usage mode\n")
+        print("Colab environment not detected.\n")
         trainingData = pd.read_csv("train.csv")  # | review (text)  | sentiment (pos/neg) |
         # testData = pd.read_csv("test.csv")       # | id (review id) |   review (text)     |
         stopWords = [line.rstrip('\n') for line in open("stopwords.txt")]
 
-        sampledTrainingData = trainingData.sample(frac=0.1)
-        numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(sampledTrainingData)
+        trainingData = trainingData.sample(frac=0.5)
 
+        kf = KFold(n_splits=10, shuffle=False)
+        foldNum = 0
+        foldAccs = []
+        for train_index, test_index in kf.split(trainingData):
+            print("Fold", foldNum + 1)
 
+            print("Training...", end='')
+            kfoldTrain = trainingData.iloc[train_index]
+            numWords, vectorizer, theta0, theta1, theta_j_0, theta_j_1 = train(kfoldTrain)
+            print("DONE")
 
+            print("Testing...", end='')
+            kfoldTest = trainingData.iloc[test_index]
+            acc = test(vectorizer, kfoldTest, theta0, theta1, theta_j_0, theta_j_1)
+            print("DONE \nAccuracy = {0:.2f}".format(acc), "%\n")
 
-
-
+            foldAccs.append(acc)
+            foldNum += 1
+        print("Average accuracy across all folds = {0:.2f}%".format(np.array(foldAccs).sum() / len(foldAccs)))
