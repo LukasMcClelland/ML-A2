@@ -1,6 +1,7 @@
 
 
-# This file currently only runs in colab. You'll have to link up Colab and your google drive and make sure that files:
+# To run this file outside of colab, change the paths for the open_csv functions.
+# If running in Colab, you'll have to link up Colab and your google drive and make sure that files:
 # train.csv, test.csv
 # are in the root folder of your gdrive
 
@@ -69,13 +70,13 @@ def stemmed_words(doc):
 
 # trainingData = trainingData.sample(frac=1)
 
-X_train = trainingData['review']
-y_train = trainingData['sentiment']
 
-X_test = testData['review']
-# y_test is unknown (save y_preds to file)
+#*** UNCOMMENT OUT THESE 3 LINES TO GO INTO TESTING MODE***
+# X_train = trainingData['review']
+# y_train = trainingData['sentiment']
+# X_test = testData['review']
 
-# X_train, X_test, y_train, y_test = train_test_split(trainingData['review'], trainingData['sentiment'], train_size=0.8, test_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(trainingData['review'], trainingData['sentiment'], train_size=0.8, test_size=0.2)
 
 # 88.5
 # vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='\\b[a-zA-Z]+\\b|\\b\\w+\\/[1-9]+\\b|\\b[1-9]+\\/\\w+\\b', ngram_range=(1,2), binary=False)
@@ -161,13 +162,14 @@ clf = LogisticRegression()
 clf = GridSearchCV(clf, parameters, cv=nFolds, verbose=10)
 clf.fit(vectors_train_normalized, y_train)
 y_pred = clf.predict(vectors_test_normalized)
+print(metrics.accuracy_score(y_test, y_pred))
 
-from google.colab import files
-
-with open('submission.csv', 'w') as f:
-    f.write('id,sentiment\n')
-    for x in range(len(y_pred)):
-        f.write(str(x) + "," + y_pred[x] + "\n")
+# from google.colab import files
+#
+# with open('submission.csv', 'w') as f:
+#     f.write('id,sentiment\n')
+#     for x in range(len(y_pred)):
+#         f.write(str(x) + "," + y_pred[x] + "\n")
 
 
 # I'm storing random shit in this function so I can easily decreased the size of the file on screen.
