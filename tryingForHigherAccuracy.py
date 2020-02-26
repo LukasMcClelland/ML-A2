@@ -5,6 +5,7 @@
 # train.csv, test.csv
 # are in the root folder of your gdrive
 
+
 # I recommend trying different sklearn classifiers (and playing with the parameters you can pass to each one)
 # There's way of manipulating the classifiers and manipulating the CountVectorizer/Normalizer/TfidfVectorizer (as you can see from the messy code)
 
