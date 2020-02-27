@@ -44,14 +44,14 @@ if __name__ == '__main__':
         y_test = None
 
     else:
-        trainingData = trainingData.sample(frac=0.25)
+        trainingData = trainingData.sample(frac=1)
         X_train, X_test, y_train, y_test = train_test_split(trainingData['review'], trainingData['sentiment'], train_size=0.8, test_size=0.2)
 
     stemmer = SnowballStemmer("english")
     analyzer = CountVectorizer().build_analyzer()
 
     # Do count vectorization
-    vectorizer = CountVectorizer(strip_accents='ascii',  binary=True)
+    vectorizer = CountVectorizer(strip_accents='ascii',  binary=False)
     vectors_train = vectorizer.fit_transform(X_train)
     vectors_test = vectorizer.transform(X_test)
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     # Run a GridSearchCV to determine optimal hyper-parameters (very long with many parameters)
     nFolds = 5
     parameters = {
-        'hidden_layer_sizes': [(50,100,50)],
+        'hidden_layer_sizes': [(10, 10, 10)],
         'activation': ['relu'],
         'solver': ['adam'],
         'alpha': [0.0001],
