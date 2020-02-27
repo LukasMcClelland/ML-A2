@@ -30,15 +30,14 @@ def train(trainingData, stopWords):
     # Create the vectorizer and fit it to the data. Transform the training data to word counts.
     vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+',
                                  stop_words=stopWords, max_features=maxFeatures, binary=True)
-    vectorizer = CountVectorizer(strip_accents='ascii', max_features=maxFeatures ,binary=True)
     countMatrix = vectorizer.fit_transform(trainingData['review'])
     countMatrixAsArray = countMatrix.toarray()  # This line gets us the training examples as a matrix, where rows are reviews and columns are word counts
     numWords = len(countMatrixAsArray[0])
 
     # ----- Uncomment the following lines to see some info printed out during the training process -----
-    # print("Show the", maxFeatures, "most popular words in the corpus:\n", vectorizer.get_feature_names())
-    # print("\nNumber of reviews (rows) in the word count table:", len(countMatrixAsArray))
-    # print("Number of words   (cols) in the word count table:", len(countMatrixAsArray[0]))
+    print("Show the", maxFeatures, "most popular words in the corpus:\n", vectorizer.get_feature_names())
+    print("Number of reviews (rows) in the word count table:", len(countMatrixAsArray))
+    print("Number of words   (cols) in the word count table:", len(countMatrixAsArray[0]))
 
     # Create dictionary with separated classes
     separated = separateClasses(countMatrixAsArray, trainingData['sentiment'])
