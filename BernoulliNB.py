@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 import sys
 from sklearn.model_selection import KFold
+import time
 
 maxFeatures = 5000  # Maximum number of words to use with the vectorizer
 inColab = False  # No need to change this, it's checked automatically
@@ -29,6 +30,7 @@ def train(trainingData, stopWords):
     # Create the vectorizer and fit it to the data. Transform the training data to word counts.
     vectorizer = CountVectorizer(strip_accents='ascii', lowercase=True, analyzer='word', token_pattern='(?u)[a-zA-Z]+',
                                  stop_words=stopWords, max_features=maxFeatures, binary=True)
+    vectorizer = CountVectorizer(strip_accents='ascii', max_features=maxFeatures ,binary=True)
     countMatrix = vectorizer.fit_transform(trainingData['review'])
     countMatrixAsArray = countMatrix.toarray()  # This line gets us the training examples as a matrix, where rows are reviews and columns are word counts
     numWords = len(countMatrixAsArray[0])
@@ -97,7 +99,6 @@ if __name__ == "__main__":
     # If we're using Colab, then we can work with bigger amounts of data
     if inColab:
         print("Colab environment detected.\n")
-        maxFeatures = 50000
         trainingData = pd.read_csv("./gdrive/My Drive/train.csv")  # | review (text)  | sentiment (pos/neg) |
         # testData = pd.read_csv("test.csv")       # | id (review id) |   review (text)     |
         stopWords = [line.rstrip('\n') for line in open("./gdrive/My Drive/stopwords.txt")]
@@ -111,6 +112,7 @@ if __name__ == "__main__":
         kf = KFold(n_splits=5, shuffle=False)
         foldNum = 0
         foldAccs = []
+        startTime = time.time()
         for train_index, test_index in kf.split(trainingData):
             print("Fold", foldNum + 1)
 
@@ -127,6 +129,8 @@ if __name__ == "__main__":
             foldAccs.append(acc)
             foldNum += 1
         print("Average accuracy across all folds = {0:.2f}%".format(np.array(foldAccs).sum() / len(foldAccs)))
+        print("Total runtime = {0:.2f} seconds".format(time.time() - startTime))
+        print("Average run time per fold = {0:.2f} seconds".format((time.time() - startTime)/foldNum))
 
 
     # If we're not using Colab, then we'll work with more modest amounts of data (between 1/4 to 1/2 or so)
@@ -142,9 +146,10 @@ if __name__ == "__main__":
 
         # Do K-Fold cross-validation. Call our train/test functions
         # Print the accuracy of each fold and the average accuracy across all folds
-        kf = KFold(n_splits=10, shuffle=False)
+        kf = KFold(n_splits=5, shuffle=False)
         foldNum = 0
         foldAccs = []
+        startTime = time.time()
         for train_index, test_index in kf.split(trainingData):
             print("Fold", foldNum + 1)
 
@@ -161,3 +166,5 @@ if __name__ == "__main__":
             foldAccs.append(acc)
             foldNum += 1
         print("Average accuracy across all folds = {0:.2f}%".format(np.array(foldAccs).sum() / len(foldAccs)))
+        print("Total runtime = {0:.2f} seconds".format(time.time() - startTime))
+        print("Average run time per fold = {0:.2f} seconds".format((time.time() - startTime)/foldNum))
