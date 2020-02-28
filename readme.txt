@@ -1,7 +1,9 @@
 Parya Nasr, Lukas McClelland
 
-Firstly, three files must be uploaded to the main directory of your Google Drive. These files are 'train.csv', 'test.csv', and 'stopwords.txt'.
-The stopwords file has been included with this assignment submission. If it's not in the same directory as this readme, then I'm sure it's not far away.
+Firstly, three files must be uploaded to the main directory of your Google Drive. These files are 'train.csv', 'test.csv', 
+and 'stopwords.txt'.
+The stopwords file has been included with this assignment submission. If it's not in the same directory as this readme, 
+then I'm sure it's not far away.
 To clarify, the three files should be in the  /content/gdrive/'My Drive'/  folder.
 
 
